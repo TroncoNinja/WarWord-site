@@ -6,4 +6,4 @@
 - drag and drop work style
 - auto update
 
-# LINK: {work in progress}
+# LINK: [https://war-world.pages.dev/storia](https://war-world.pages.dev/storia)
