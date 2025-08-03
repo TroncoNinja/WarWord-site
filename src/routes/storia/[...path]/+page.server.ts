@@ -1,8 +1,12 @@
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { error } from '@sveltejs/kit';
 import { compile } from 'mdsvex';
 import type { PageServerLoad } from './$types';
+
+// Import all .svx files using Vite's glob import
+const contentFiles = import.meta.glob('/src/routes/storia/content/**/*.svx', { 
+    as: 'raw',
+    eager: true 
+});
 
 export const load: PageServerLoad = async ({ params }) => {
     const contentPath = params.path || '';
@@ -11,19 +15,24 @@ export const load: PageServerLoad = async ({ params }) => {
         const fileName = contentPath.split('/').pop() || '';
         const directoryPath = contentPath.split('/').slice(0, -1).join('/');
         
-        let fullFilePath: string;
-        
+        // Construct the file path that matches the glob pattern
+        let filePath: string;
         if (directoryPath) {
-            fullFilePath = join(process.cwd(), 'src/routes/storia/content', directoryPath, `${fileName}.svx`);
+            filePath = `/src/routes/storia/content/${directoryPath}/${fileName}.svx`;
         } else {
-            fullFilePath = join(process.cwd(), 'src/routes/storia/content', `${fileName}.svx`);
+            filePath = `/src/routes/storia/content/${fileName}.svx`;
         }
         
-        const rawContent = await readFile(fullFilePath, 'utf-8');
+        // Get the content from the pre-imported files
+        const rawContent = contentFiles[filePath];
+        
+        if (!rawContent) {
+            throw new Error(`Content not found: ${filePath}`);
+        }
         
         // Process with mdsvex
         const processed = await compile(rawContent, {
-            filename: fullFilePath
+            filename: filePath
         });
         
         return {

@@ -1,5 +1,3 @@
-import { readdir, stat } from 'fs/promises';
-import { join, extname, basename } from 'path';
 import type { LayoutServerLoad } from './$types';
 
 interface Chapter {
@@ -12,68 +10,6 @@ interface Chapter {
 
 let idCounter = 1;
 
-async function checkHasContent(contentPath: string): Promise<boolean> {
-    try {
-        const items = await readdir(contentPath);
-        
-        for (const item of items) {
-            const itemPath = join(contentPath, item);
-            const itemStat = await stat(itemPath);
-            
-            if (itemStat.isFile() && item === '+page.svx') {
-                return true; // Found +page.svx file
-            }
-        }
-        
-        return false; // No +page.svx file found
-    } catch {
-        return false;
-    }
-}
-
-async function generateChaptersFromContent(contentPath: string, baseUrl: string = '/storia'): Promise<Chapter[]> {
-    const chapters: Chapter[] = [];
-    
-    try {
-        const items = await readdir(contentPath);
-        
-        for (const item of items) {
-            const itemPath = join(contentPath, item);
-            const itemStat = await stat(itemPath);
-            
-            if (itemStat.isDirectory()) {
-                // Handle directories as chapters/subchapters
-                const subchapters = await generateChaptersFromContent(itemPath, `${baseUrl}/${item}`);
-                const hasContent = await checkHasContent(itemPath);
-                
-                chapters.push({
-                    id: idCounter++,
-                    title: formatTitle(item),
-                    url: `${baseUrl}/${item}`,
-                    hasContent,
-                    subchapters
-                });
-            } else if (itemStat.isFile() && ['.md', '.svx'].includes(extname(item))) {
-                // Handle markdown or svelte files as chapters
-                const fileName = basename(item, extname(item));
-                
-                chapters.push({
-                    id: idCounter++,
-                    title: formatTitle(fileName),
-                    url: `${baseUrl}/${fileName}`,
-                    hasContent: true,
-                    subchapters: []
-                });
-            }
-        }
-    } catch (error) {
-        console.error(`Error reading directory ${contentPath}:`, error);
-        return [];
-    }
-    
-    return chapters.sort((a, b) => a.title.localeCompare(b.title));
-}
-
 function formatTitle(filename: string): string {
     // Convert filename to readable title
     // e.g., "chapter-1" -> "Chapter 1", "historical-context" -> "Historical Context"
@@ -83,11 +19,137 @@ function formatTitle(filename: string): string {
         .join(' ');
 }
 
-export const load: LayoutServerLoad = async () => {
-    const contentPath = join(process.cwd(), 'src/routes/storia/content');
-    const chapters = await generateChaptersFromContent(contentPath);
+function generateChaptersFromContent(): Chapter[] {
+    // Get all files in the content directory
+    const allFiles = import.meta.glob('./content/**/*.{md,svx}', { eager: true });
+    const pageFiles = import.meta.glob('./content/**/+page.svx', { eager: true });
     
-    console.log('Generated chapters:', JSON.stringify(chapters, null, 2));
+    // Build directory structure
+    const directories = new Map<string, {
+        path: string;
+        hasPageFile: boolean;
+        files: string[];
+        subdirs: Set<string>;
+    }>();
+    
+    // Analyze all files to build directory structure
+    for (const filePath of Object.keys(allFiles)) {
+        const relativePath = filePath.replace('./content/', '');
+        const pathParts = relativePath.split('/');
+        
+        // Build directory hierarchy
+        for (let i = 0; i < pathParts.length - 1; i++) {
+            const dirPath = pathParts.slice(0, i + 1).join('/');
+            const fullDirPath = `./content/${dirPath}`;
+            
+            if (!directories.has(dirPath)) {
+                directories.set(dirPath, {
+                    path: dirPath,
+                    hasPageFile: false,
+                    files: [],
+                    subdirs: new Set()
+                });
+            }
+            
+            const dirInfo = directories.get(dirPath)!;
+            
+            // Check if this directory has a +page.svx file
+            const pageFilePath = `${fullDirPath}/+page.svx`;
+            if (Object.keys(pageFiles).includes(pageFilePath)) {
+                dirInfo.hasPageFile = true;
+            }
+            
+            // Add file to directory
+            if (i === pathParts.length - 2) {
+                dirInfo.files.push(pathParts[pathParts.length - 1]);
+            }
+            
+            // Add subdirectory reference
+            if (i > 0) {
+                const parentDir = pathParts.slice(0, i).join('/');
+                directories.get(parentDir)?.subdirs.add(pathParts[i]);
+            }
+        }
+    }
+    
+    return buildChapterHierarchy(directories, allFiles);
+}
+
+function buildChapterHierarchy(
+    directories: Map<string, any>, 
+    allFiles: Record<string, any>,
+    currentPath: string = '',
+    baseUrl: string = '/storia'
+): Chapter[] {
+    const chapters: Chapter[] = [];
+    
+    // Get items in current directory
+    const currentItems = new Set<string>();
+    
+    // Add direct files
+    for (const filePath of Object.keys(allFiles)) {
+        const relativePath = filePath.replace('./content/', '');
+        if (currentPath === '') {
+            // Root level
+            const pathParts = relativePath.split('/');
+            if (pathParts.length === 1) {
+                currentItems.add(pathParts[0]);
+            } else if (pathParts.length > 1) {
+                currentItems.add(pathParts[0]);
+            }
+        } else {
+            // Subdirectory level
+            if (relativePath.startsWith(currentPath + '/')) {
+                const remainingPath = relativePath.substring(currentPath.length + 1);
+                const nextPart = remainingPath.split('/')[0];
+                currentItems.add(nextPart);
+            }
+        }
+    }
+    
+    for (const item of Array.from(currentItems).sort()) {
+        const itemPath = currentPath ? `${currentPath}/${item}` : item;
+        const fullItemPath = `./content/${itemPath}`;
+        
+        // Check if this is a directory (has subdirectories or is in our directories map)
+        const isDirectory = directories.has(itemPath) || 
+                           Object.keys(allFiles).some(f => 
+                               f.startsWith(`${fullItemPath}/`) && 
+                               f !== `${fullItemPath}` &&
+                               !f.endsWith(`/${item}`)
+                           );
+        
+        if (isDirectory) {
+            // Handle directories as chapters/subchapters
+            const subchapters = buildChapterHierarchy(directories, allFiles, itemPath, `${baseUrl}/${item}`);
+            const hasContent = Object.keys(allFiles).includes(`${fullItemPath}/+page.svx`);
+            
+            chapters.push({
+                id: idCounter++,
+                title: formatTitle(item),
+                url: `${baseUrl}/${item}`,
+                hasContent,
+                subchapters
+            });
+        } else if (item.endsWith('.md') || item.endsWith('.svx')) {
+            // Handle markdown or svelte files as chapters
+            const fileName = item.replace(/\.(md|svx)$/, '');
+            
+            chapters.push({
+                id: idCounter++,
+                title: formatTitle(fileName),
+                url: `${baseUrl}/${fileName}`,
+                hasContent: true,
+                subchapters: []
+            });
+        }
+    }
+    
+    return chapters.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+export const load: LayoutServerLoad = async () => {
+    const chapters = generateChaptersFromContent();
 
     return {
         chapters
