@@ -1,9 +1,9 @@
-<script>
+<!-- <script>
     import audio from './storie_dal_fronte_01.wav';
     console.log(audio);
-</script>
+</script> -->
 
 
 # Soldato speciale Edward Collins. testimonianza #0067 sulle attività del “Lupo”, rilasciata 3 giorni prima della scomparsa
 
-<audio src={audio} controls='true' autoplay='true'></audio>
+<!-- <audio src={audio} controls='true' autoplay='true'></audio> -->
