@@ -11,12 +11,8 @@ interface Chapter {
 let idCounter = 1;
 
 function formatTitle(filename: string): string {
-    // Remove .svx extension and convert to title case
-    return filename
-        .replace('.svx', '')
-        .split(/[-_\s]+/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+    // Remove .svx extension and preserve original casing
+    return filename.replace('.svx', '');
 }
 
 // Import all .svx files using Vite's glob import
