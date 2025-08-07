@@ -1,4 +1,4 @@
-Questo documento si propone l'obbiettivo di gettare la base su cui si fonderanno le relazioni fra uomini e macchine dotate di intelletto. L'[[ONN|Organizzazione delle Nazioni Neutrali]] ne firma il contenuto e lo promulga come legge obbligatoria per ogni singola nazione sotto suo contratto.
+Questo documento si propone l'obbiettivo di gettare la base su cui si fonderanno le relazioni fra uomini e macchine dotate di intelletto. L'[ONN]() ne firma il contenuto e lo promulga come legge obbligatoria per ogni singola nazione sotto suo contratto.
 
 - #### Articolo 1
 	  Le Macchine Intelligenti hanno diritto alla vita, per tanto è illegale porre fine alla vita di queste ultime senza una valida ragione.

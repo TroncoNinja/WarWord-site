@@ -1,3 +1,7 @@
-I Meta Umani sono soldati geneticamente modificati con DNA proveniente dal mondo animale. Questo tipo di ingegneria genetica è possibile grazie all'uso delle [[Siringhe]]. L'[[Nuovo Giappone]] è il creatore di questa tecnica avanzata di manipolazione genetica, che ora viene usata in tutto il mondo. I meta umani vengono impiegati prevalentemente in ambito militare, ciononostante alcuni Meta Umani intraprendono un percorso lavorativo civile.
+I Meta Umani sono soldati geneticamente modificati con DNA proveniente dal mondo animale. 
+Questo tipo di ingegneria genetica è possibile grazie all'uso delle [Siringhe](/storia/tecnologia/Siringhe). 
+L'[Nuovo Giappone](/storia/fazioni/Nuovo%20Giappone) è il creatore di questa tecnica avanzata di manipolazione genetica, 
+che ora viene usata in tutto il mondo. I meta umani vengono impiegati prevalentemente in ambito militare, 
+ciononostante alcuni Meta Umani intraprendono un percorso lavorativo civile.
 
-![[meta_umani.jpg]]
+<img src="/images/meta_umani.jpg" alt="Meta Umani" width="400" />
